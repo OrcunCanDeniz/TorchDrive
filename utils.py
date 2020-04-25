@@ -124,14 +124,14 @@ class Transforms(object):
         return (image, steering_angle)
 
 
-def vis_train(losses, epochs):
+def vis_train(training_losses, validationLosses, epochs):
     fig = plt.figure()
-    x_vals = np.linspace(1, epochs, epochs, dtype=np.int)
-    plt.plot(x_vals,losses)
+    x_vals = np.linspace(0, epochs-1, epochs, dtype=np.int)
+    plt.plot(x_vals,training_losses, 'b', x_vals, validationLosses, 'g')
     plt.ylabel('loss')
     plt.xlabel('Epochs')
     plt.title('Loss over Epochs')
-    plt.xlim(1, epochs)
+    plt.xlim(0, epochs-1)
     #fig.xaxis.set_major_locator(MaxNLocator(integer=True))
     plt.show()
     fig.savefig('self_driving_car_loss.png')
