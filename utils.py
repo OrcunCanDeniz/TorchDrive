@@ -2,6 +2,7 @@ import cv2, os
 import numpy as np
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 66, 200, 3
 INPUT_SHAPE = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS)
@@ -123,11 +124,14 @@ class Transforms(object):
         return (image, steering_angle)
 
 
-def vis_train(losses):
+def vis_train(losses, epochs):
     fig = plt.figure()
-    plt.plot(losses)
+    x_vals = np.linspace(1, epochs, epochs, dtype=np.int)
+    plt.plot(x_vals,losses)
     plt.ylabel('loss')
     plt.xlabel('Epochs')
     plt.title('Loss over Epochs')
+    plt.xlim(1, epochs)
+    #fig.xaxis.set_major_locator(MaxNLocator(integer=True))
     plt.show()
     fig.savefig('self_driving_car_loss.png')

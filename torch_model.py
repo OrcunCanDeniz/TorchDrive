@@ -1,7 +1,6 @@
 import tqdm, pdb
 import torch
 import torch.nn as nn
-import pandas as pd
 import torch.nn.functional as F
 from utils import vis_train
 
@@ -69,21 +68,32 @@ class Driver(nn.Module):
         return lin4.squeeze()
 
 
-def train(net, device, epochs, learning_rate, trainingLoader, validationLoader):
+def train(net, device, epochs, lr, trainingLoader, validationLoader):
     model = net.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     lossFunc = nn.MSELoss(reduction='sum')
     losses = []
+    epoch_losses = torch.tensor([])
+    min_loss = torch.tensor(10000000)
     for i in tqdm.tqdm(range(epochs)):
         for img_batch, labels in trainingLoader:
-            img_batch, labels = img_batch.to(device), labels.to(device)
+            img_batch, labels = img_batch.to(device).float(), labels.to(device).float()
             img_batch = img_batch.permute(0,3,1,2)
             outputs = model(img_batch)
             loss = lossFunc(outputs, labels)
-            losses.append(loss)
+            epoch_losses = torch.cat((loss.cpu().unsqueeze(dim=0), epoch_losses), 0)
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
 
-    vis_train(losses)
+        epoch_loss = epoch_losses.mean()
+        losses.append(epoch_loss)
+        epoch_losses = torch.tensor([])
+
+        if epoch_loss < min_loss:
+            min_loss = epoch_loss
+            model_name = 'driver' + '_best.pt'
+            torch.save(model, model_name)
+
+    vis_train(losses, epochs)
 

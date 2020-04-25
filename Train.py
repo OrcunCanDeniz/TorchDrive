@@ -14,7 +14,7 @@ def main():
     parser = argparse.ArgumentParser(description='Behavioral Cloning Training Program')
     parser.add_argument('-d', help='data directory',        dest='data_dir',          type=str,   default='./data/drive_data.csv')
     parser.add_argument('-t', help='train size fraction',    dest='train_size',         type=float, default=0.8)
-    parser.add_argument('-n', help='number of epochs',      dest='nb_epoch',          type=int,   default=10)
+    parser.add_argument('-e', help='number of epochs',      dest='nb_epoch',          type=int,   default=10)
     parser.add_argument('-b', help='batch size',            dest='batch_size',        type=int,   default=64)
     parser.add_argument('-l', help='learning rate',         dest='learning_rate',     type=float, default=1.0e-4)
     args = parser.parse_args()
@@ -55,7 +55,7 @@ def main():
     model = Driver(batch_size=loader_parameters['batch_size'])
 
     # Start Training
-    train(model, device, lr=args['learning_rate'], epochs=args['nb_epoch'], batch_size=loader_parameters['batch_size'],
+    train(model, device, lr=args['learning_rate'], epochs=args['nb_epoch'],
           trainingLoader=trainLoader, validationLoader=valLoader)
 
 if __name__ == "__main__":
