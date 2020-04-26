@@ -99,7 +99,6 @@ def train(net, device, epochs, lr, trainingLoader, validationLoader):
 
         with torch.no_grad():
             for val_img_batch, val_labels in validationLoader:
-
                 val_img_batch, val_labels = val_img_batch.to(device).float(), val_labels.to(device).float()
                 val_img_batch = val_img_batch.permute(0,3,1,2)
                 outputs = model(val_img_batch)

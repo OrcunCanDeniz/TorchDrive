@@ -2,7 +2,7 @@ import cv2, os
 import numpy as np
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
+import matplotlib.patches as mpatches
 
 IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 66, 200, 3
 INPUT_SHAPE = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS)
@@ -132,6 +132,9 @@ def vis_train(training_losses, validationLosses, epochs):
     plt.xlabel('Epochs')
     plt.title('Loss over Epochs')
     plt.xlim(0, epochs-1)
+    blue_patch = mpatches.Patch(color='blue', label='Training Loss')
+    green_patch = mpatches.Patch(color='green', label='Validation Loss')
+    plt.legend(handles=[blue_patch, green_patch])
     #fig.xaxis.set_major_locator(MaxNLocator(integer=True))
     plt.show()
     fig.savefig('self_driving_car_loss.png')

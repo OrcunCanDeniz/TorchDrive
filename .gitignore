@@ -5,5 +5,7 @@
 *.ipynb
 *.iml
 .idea/
+*.pt
+*.pth
 __pycache__/
 drive_keras.py

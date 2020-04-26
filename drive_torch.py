@@ -45,6 +45,14 @@ MIN_SPEED = 10
 #and a speed limit
 speed_limit = MAX_SPEED
 
+if torch.cuda.is_available():
+    print('Using GPU !!!')
+    device = torch.device("cuda:0")
+    torch.backends.cudnn.benchmark = True
+else:
+    print('Using CPU !!!')
+    device = torch.device("cpu")
+
 #registering event handler for the server
 @sio.on('telemetry')
 def telemetry(sid, data):
@@ -61,7 +69,8 @@ def telemetry(sid, data):
             image = np.asarray(image)       # from PIL image to numpy array
             image = utils.preprocess(image) # apply the preprocessing
             image = np.array([image])       # the model expects 4D array
-
+            image = torch.from_numpy(image).to(device).permute(0,3,1,2)
+            print(image.shape)
             # predict the steering angle for the image
             steering_angle = float(model(image))
             # lower the throttle as the speed increases
@@ -122,8 +131,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     #load model
-    model = Driver(batch_size=1)
-    model.load_state_dict(args.model)
+    model = torch.load(args.model)
     model.eval()
 
     if args.image_folder != '':
