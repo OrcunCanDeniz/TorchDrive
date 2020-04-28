@@ -1,4 +1,3 @@
-import tqdm, pdb
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -72,13 +71,13 @@ def train(net, device, epochs, lr, trainingLoader, validationLoader):
     model = net.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     lossFunc = nn.MSELoss(reduction='sum')
-
-    training_losses = []
+    training_losses, validation_losses = [], []
     training_epoch_losses = torch.tensor([])
-    validation_losses = []
     validation_epoch_losses = torch.tensor([])
-    min_loss = torch.tensor(10000000)
-    for i in tqdm.tqdm(range(epochs)):
+    min_acc= torch.tensor(0)
+    for i in range(epochs):
+        print("Epoch " + str(i) + "/" + str(epochs))
+        # Optimize
         model.train()
         for img_batch, labels in trainingLoader:
             img_batch, labels = img_batch.to(device).float(), labels.to(device).float()
@@ -89,12 +88,13 @@ def train(net, device, epochs, lr, trainingLoader, validationLoader):
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
-            #print(img_batch.shape)
 
-        training_epoch_loss = training_epoch_losses.mean()
-        training_losses.append(training_epoch_loss)
+        trainingLossMean = training_epoch_losses.mean()
+        training_losses.append(trainingLossMean)
         training_epoch_losses = torch.tensor([])
+        print(f"Training: Loss= {trainingLossMean} ")
 
+        # Validate
         model.eval();
 
         with torch.no_grad():
@@ -105,14 +105,19 @@ def train(net, device, epochs, lr, trainingLoader, validationLoader):
                 val_loss = lossFunc(outputs, val_labels)
                 validation_epoch_losses = torch.cat((val_loss.cpu().unsqueeze(dim=0), validation_epoch_losses), 0)
 
-        validation_epoch_loss = validation_epoch_losses.mean()
-        validation_losses.append(validation_epoch_loss)
+        valLossMean = validation_epoch_losses.mean()
+        validation_losses.append(valLossMean)
         validation_epoch_losses = torch.tensor([])
 
-        if validation_epoch_loss < min_loss:
-            min_loss = training_epoch_loss
+        print(f"Validation: Loss= {valLossMean} \n")
+
+
+        if valLossMean < min_acc:
+            min_acc = valLossMean
             model_name = 'driver' + '_best.pt'
             torch.save(model, model_name)
 
-    vis_train(training_losses=training_losses, validationLosses=validation_losses, epochs=epochs)
+
+    vis_train(trainingMetric=training_losses, validationMetric=validation_losses, epochs=epochs, metricType="Losses")
+
 

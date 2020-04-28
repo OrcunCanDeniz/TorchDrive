@@ -1,5 +1,5 @@
-import argparse, pdb
-import datasets, torch_model
+import argparse
+import datasets
 from utils import Transforms
 from torch.utils.data import random_split, DataLoader
 import torch
@@ -8,9 +8,6 @@ from torch_model import Driver, train
 
 
 def main():
-    """
-    Load train/validation data set and train the model
-    """
     parser = argparse.ArgumentParser(description='Behavioral Cloning Training Program')
     parser.add_argument('-d', help='data directory',        dest='data_dir',          type=str,   default='./data/drive_data.csv')
     parser.add_argument('-t', help='train size fraction',    dest='train_size',         type=float, default=0.8)
@@ -28,6 +25,7 @@ def main():
         print('{:<20} := {}'.format(key, value))
     print('-' * 30)
 
+    # Set device
     if torch.cuda.is_available():
         print('Using GPU !!!')
         device = torch.device("cuda:0")
@@ -43,16 +41,11 @@ def main():
     train_size = int(len(drivingData) * args['train_size'])
     training_set, val_set = random_split(drivingData, [train_size, len(drivingData) - train_size])
 
-    # Create Dataloaders
-    loader_parameters = {'batch_size': args['batch_size'],
-                         'shuffle': True,
-                         'num_workers': 2}
-
-    trainLoader = DataLoader(training_set, **loader_parameters)
-    valLoader = DataLoader(val_set, **loader_parameters)
+    trainLoader = DataLoader(training_set, batch_size=args["batch_size"], num_workers=3, shuffle=True)
+    valLoader = DataLoader(val_set, batch_size=args["batch_size"], num_workers=3, shuffle=False)
 
     # Initialize Model
-    model = Driver(batch_size=loader_parameters['batch_size'])
+    model = Driver(batch_size=args['batch_size'])
 
     # Start Training
     train(model, device, lr=args['learning_rate'], epochs=args['nb_epoch'],
