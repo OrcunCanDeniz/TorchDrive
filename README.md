@@ -1,5 +1,5 @@
 ﻿# TorchDrive
-###### Work in progress. 
+###### Check throttle branch for a better+newer version. 
 
 This repository aims to implement [NVIDIA's Behavioral Cloning Paper](https://images.nvidia.com/content/tegra/automotive/images/2016/solutions/pdf/end-to-end-dl-using-px.pdf) using PyTorch. 
 
