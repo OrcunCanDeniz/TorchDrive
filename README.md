@@ -1,5 +1,7 @@
 ﻿# TorchDrive
 
+![](figures/drive.gif)
+
 This repository aims to implement [NVIDIA's Behavioral Cloning Paper](https://images.nvidia.com/content/tegra/automotive/images/2016/solutions/pdf/end-to-end-dl-using-px.pdf) using PyTorch. However, instead of only generating steering commands to be able to also control the throttle, some modifications are made to the model. While the NVIDIA model is like;
 
 
