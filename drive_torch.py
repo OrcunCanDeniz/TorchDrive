@@ -1,68 +1,40 @@
-#parsing command line arguments
 import argparse
-#decoding camera images
 import base64
-#for frametimestamp saving
 from datetime import datetime
-#reading and writing files
 import os
-#high level file operations
 import shutil
-#matrix math
 import numpy as np
-#real-time server
 import socketio
-#concurrent networking 
-import eventlet
-#web server gateway interface
 import eventlet.wsgi
-#image manipulation
 from PIL import Image
-#web framework
 from flask import Flask
-#input output
 from io import BytesIO
 
-#load our saved model
-from torch_model import Driver
 import torch
-
-#helper class
-import utils
+import utils # helpers
 
 #initialize our server
 sio = socketio.Server()
 #our flask (web) app
 app = Flask(__name__)
-#init our model and image array as empty
+
 model = None
 prev_image_array = None
 
-#set min/max speed for our autonomous car
-MAX_SPEED = 25
-MIN_SPEED = 10
-
-#and a speed limit
-speed_limit = MAX_SPEED
-
 if torch.cuda.is_available():
     print('Using GPU !!!')
-    device = torch.device("cuda:0")
-    torch.backends.cudnn.benchmark = True
+    device = torch.device("cuda:0")# choose GPU number 0, as computation device
+    torch.backends.cudnn.benchmark = True #CUDNN autotuner to find best algorithm for present hardware
 else:
     print('Using CPU !!!')
-    device = torch.device("cpu")
+    device = torch.device("cpu")# choose CPU as computation device
 
 #registering event handler for the server
 @sio.on('telemetry')
 def telemetry(sid, data):
     if data:
-        # The current steering angle of the car
-        steering_angle = float(data["steering_angle"])
-        # The current throttle of the car, how hard to push peddle
-        throttle = float(data["throttle"])
         # The current speed of the car
-        speed = float(data["speed"])
+        speed = torch.tensor(float(data["speed"])).unsqueeze(0).to(device)
         # The current image from the center camera of the car
         image = Image.open(BytesIO(base64.b64decode(data["image"])))
         try:
@@ -70,18 +42,12 @@ def telemetry(sid, data):
             image = utils.preprocess(image) # apply the preprocessing
             image = np.array([image])       # the model expects 4D array
             image = torch.from_numpy(image).to(device).permute(0,3,1,2)
-            print(image.shape)
             # predict the steering angle for the image
-            steering_angle = float(model(image))
-            # lower the throttle as the speed increases
-            # if the speed is above the current speed limit, we are on a downhill.
-            # make sure we slow down first and then go back to the original max speed.
-            global speed_limit
-            if speed > speed_limit:
-                speed_limit = MIN_SPEED  # slow down
-            else:
-                speed_limit = MAX_SPEED
-            throttle = 1.0 - steering_angle**2 - (speed/speed_limit)**2
+            #steering_angle, throttle, reverse = model((image,speed.unsqueeze(0)))
+            out = model((image,speed.unsqueeze(0)))
+            steering_angle = float(out[0])
+
+            throttle = float(out[1]) if out[1] > abs(out[2]) else -float(out[2]) #Get the most likely one between forward and reverse throttle
 
             print('{} {} {}'.format(steering_angle, throttle, speed))
             send_control(steering_angle, throttle)

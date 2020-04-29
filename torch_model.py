@@ -39,10 +39,14 @@ class Driver(nn.Module):
 
         self.lin1 = nn.Linear(self.flattened_size,100)
         self.lin2 = nn.Linear(100, 50)
-        self.lin3 = nn.Linear(50, 10)
-        self.lin4 = nn.Linear(10, 1)
+        self.lin3 = nn.Linear(51, 10)
+        self.lin4 = nn.Linear(10, 3)
 
     def _convs(self, image):
+        """
+        Run convolutional block
+        """
+
         image = image / 127.5 - 1
 
         conv1 = F.elu(self.conv_1(image), alpha=0.3)
@@ -56,12 +60,15 @@ class Driver(nn.Module):
 
         return flat
 
-    def forward(self, image):
-
-        flat = self._convs(image)
+    def forward(self, sample):
+        """
+        Forward Prop.
+        """
+        flat = self._convs(sample[0])
         lin1 = F.elu(self.lin1(flat), alpha=0.3)
         lin2 = F.elu(self.lin2(lin1), alpha=0.3)
-        lin3 = F.elu(self.lin3(lin2), alpha=0.3)
+        featureAdded = torch.cat((lin2,sample[1]), 1)
+        lin3 = F.elu(self.lin3(featureAdded), alpha=0.3)
         lin4 = self.lin4(lin3)
 
         return lin4.squeeze()
@@ -70,19 +77,20 @@ class Driver(nn.Module):
 def train(net, device, epochs, lr, trainingLoader, validationLoader):
     model = net.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    lossFunc = nn.MSELoss(reduction='sum')
+    lossFunc = nn.MSELoss(reduction='sum') # Meqan Squared Error Loss Func
     training_losses, validation_losses = [], []
     training_epoch_losses = torch.tensor([])
-    validation_epoch_losses = torch.tensor([])
-    min_acc= torch.tensor(0)
+    validation_epoch_losses = torch.tensor([]) # Tensors to store each epochs losses
+    min_lost= torch.tensor(1000000)
+
     for i in range(epochs):
-        print("Epoch " + str(i) + "/" + str(epochs))
+        print("Epoch " + str(i+1) + "/" + str(epochs))
         # Optimize
         model.train()
-        for img_batch, labels in trainingLoader:
-            img_batch, labels = img_batch.to(device).float(), labels.to(device).float()
+        for img_batch, speed, labels in trainingLoader:
+            img_batch, speed, labels = img_batch.to(device).float(),speed.to(device).float(), labels.to(device).float()
             img_batch = img_batch.permute(0,3,1,2)
-            outputs = model(img_batch)
+            outputs = model((img_batch,speed.unsqueeze(0).T))
             loss = lossFunc(outputs, labels)
             training_epoch_losses = torch.cat((loss.cpu().unsqueeze(dim=0), training_epoch_losses), 0)
             loss.backward()
@@ -98,10 +106,12 @@ def train(net, device, epochs, lr, trainingLoader, validationLoader):
         model.eval();
 
         with torch.no_grad():
-            for val_img_batch, val_labels in validationLoader:
+            for val_img_batch, val_speed, val_labels in validationLoader:
                 val_img_batch, val_labels = val_img_batch.to(device).float(), val_labels.to(device).float()
+                val_speed = val_speed.to(device).float()
                 val_img_batch = val_img_batch.permute(0,3,1,2)
-                outputs = model(val_img_batch)
+
+                outputs = model((val_img_batch, val_speed.unsqueeze(0).T))
                 val_loss = lossFunc(outputs, val_labels)
                 validation_epoch_losses = torch.cat((val_loss.cpu().unsqueeze(dim=0), validation_epoch_losses), 0)
 
@@ -112,8 +122,8 @@ def train(net, device, epochs, lr, trainingLoader, validationLoader):
         print(f"Validation: Loss= {valLossMean} \n")
 
 
-        if valLossMean < min_acc:
-            min_acc = valLossMean
+        if valLossMean < min_lost:
+            min_lost = valLossMean
             model_name = 'driver' + '_best.pt'
             torch.save(model, model_name)
 
