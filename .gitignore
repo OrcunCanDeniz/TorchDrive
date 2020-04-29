@@ -1,6 +1,6 @@
 *.jpg
 *.csv
-*.png
+.png
 *.xml
 *.ipynb
 *.iml
